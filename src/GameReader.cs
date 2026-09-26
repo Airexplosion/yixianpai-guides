@@ -22,17 +22,17 @@ namespace YxGuides
             s.Realm = (int)me.level; s.Round = gs.round; s.Remaining = gs.playerPrivateData.replaceCardChance;
             s.Hero = TranslateUtil.GetCharacterNameTranslate(me.characterId); s.Career = TranslateUtil.GetCareerTranslate(me.career);
             List<CardItem> hand = cp.GetHandCards();
-            if (hand != null) for (int i = 0; i < hand.Count; i++) Add(s, hand[i]);
+            if (hand != null) for (int i = 0; i < hand.Count; i++) Add(s, hand[i], true);
             List<CardGrid> grids = cp.GetCardGrids();
-            if (grids != null) for (int i = 0; i < grids.Count; i++) if (grids[i] != null && grids[i].unlocked) Add(s, grids[i].GetCard());
+            if (grids != null) for (int i = 0; i < grids.Count; i++) if (grids[i] != null && grids[i].unlocked) Add(s, grids[i].GetCard(), false);
             // 拖动过程中不提供缺牌结论。
             if (CardItem.draggingCard != null) return null;
             return s;
         }
-        static void Add(GuideSnapshot s, CardItem item)
+        static void Add(GuideSnapshot s, CardItem item, bool inHand)
         {
             if (item == null || item.cardInfo == null || item.cardConfig == null) return;
-            var card = new HeldCard(); card.Name = item.cardConfig.name; card.Level = item.cardConfig.rarity + 1; card.View = item;
+            var card = new HeldCard(); card.Name = item.cardConfig.name; card.Level = item.cardConfig.rarity + 1; card.InHand = inHand; card.View = item;
             s.Cards.Add(card);
         }
     }

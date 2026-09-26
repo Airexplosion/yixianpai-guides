@@ -19,6 +19,8 @@ namespace YxGuides
         public int PerRound, PerStage, Reserve;
         public bool Stop;
         public readonly List<CardRule> Requires = new List<CardRule>();
+        public CardRule IfHand;
+        public string ElseOf;
         public readonly List<CardRule> Keep = new List<CardRule>();
         public readonly List<SlotRule> Target = new List<SlotRule>();
     }
@@ -65,6 +67,14 @@ namespace YxGuides
                 s.PerRound = Number(swap, "perRound", -1); s.PerStage = Number(swap, "perStage", -1); s.Reserve = Number(swap, "reserve", 0);
                 s.Stop = Json.GetBool(d, "stopWhenTargetReady", false);
                 ReadCards(Json.GetArray(d, "requires"), s.Requires); ReadCards(Json.GetArray(d, "keep"), s.Keep);
+                Dictionary<string, object> hand = Json.GetObject(d, "ifHand");
+                if (hand != null)
+                {
+                    s.IfHand = new CardRule { Name = Text(hand, "name"), Level = Number(hand, "level", 1), Count = Number(hand, "count", 1) };
+                    if (s.IfHand.Name.Length == 0 || s.IfHand.Level < 1 || s.IfHand.Level > 3 || s.IfHand.Count < 1 || s.IfHand.Count > 8)
+                        throw new FormatException("如果条件不正确");
+                }
+                s.ElseOf = Text(d, "elseOf");
                 List<object> slots = Json.GetArray(d, "target");
                 if (slots != null) for (int j = 0; j < slots.Count; j++)
                 {
@@ -74,6 +84,14 @@ namespace YxGuides
                     throw new FormatException("阶段规则不正确");
                 for (int j = 0; j < book.Stages.Count; j++) if (book.Stages[j].Id == s.Id) throw new FormatException("阶段 ID 重复");
                 book.Stages.Add(s);
+            }
+            for (int i = 0; i < book.Stages.Count; i++)
+            {
+                StageRule s = book.Stages[i];
+                if (string.IsNullOrEmpty(s.ElseOf)) continue;
+                StageRule parent = null;
+                for (int j = 0; j < book.Stages.Count; j++) if (book.Stages[j].Id == s.ElseOf) parent = book.Stages[j];
+                if (parent == null || parent == s || parent.IfHand == null || s.IfHand != null) throw new FormatException("否则阶段引用不正确");
             }
             return book;
         }
@@ -92,7 +110,7 @@ namespace YxGuides
         public static int Number(Dictionary<string, object> d, string key, int fallback) { return (int)Json.GetNumber(d, key, fallback); }
         public static string Num(int n) { return n.ToString(CultureInfo.InvariantCulture); }
     }
-    public sealed class HeldCard { public string Name; public int Level; public object View; }
+    public sealed class HeldCard { public string Name; public int Level; public bool InHand; public object View; }
     public sealed class GuideSnapshot
     {
         public string Session, Hero, Career;
@@ -105,6 +123,8 @@ namespace YxGuides
         public static bool Match(CardRule rule, HeldCard card) { return Normalize(rule.Name) == Normalize(card.Name) && card.Level >= rule.Level; }
         public static int Count(CardRule rule, List<HeldCard> cards)
         { int n = 0; for (int i = 0; i < cards.Count; i++) if (Match(rule, cards[i])) n++; return n; }
+        static int HandCount(CardRule rule, List<HeldCard> cards)
+        { int n = 0; for (int i = 0; i < cards.Count; i++) if (cards[i].InHand && Match(rule, cards[i])) n++; return n; }
         public static StageRule Select(GuideBook book, GuideSnapshot state, out string error)
         {
             error = "";
@@ -115,6 +135,13 @@ namespace YxGuides
             {
                 StageRule s = book.Stages[i];
                 if (state.Realm < s.RealmMin || state.Realm > s.RealmMax || state.Round < s.RoundMin || state.Round > s.RoundMax) continue;
+                if (s.IfHand != null && HandCount(s.IfHand, state.Cards) < s.IfHand.Count) continue;
+                if (!string.IsNullOrEmpty(s.ElseOf))
+                {
+                    StageRule parent = null;
+                    for (int p = 0; p < book.Stages.Count; p++) if (book.Stages[p].Id == s.ElseOf) parent = book.Stages[p];
+                    if (parent == null || parent.IfHand == null || HandCount(parent.IfHand, state.Cards) >= parent.IfHand.Count) continue;
+                }
                 bool matched = true;
                 for (int j = 0; j < s.Requires.Count; j++) if (Count(s.Requires[j], state.Cards) < s.Requires[j].Count) matched = false;
                 if (!matched) continue;
