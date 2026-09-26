@@ -13,7 +13,7 @@ namespace YxGuides
     public sealed class GuideMod : YxMod
     {
         readonly List<GuideBook> _subscriptions = new List<GuideBook>();
-        readonly GuideHttp _http = new GuideHttp();
+        GuideHttp _http;
         sealed class StageSpent { public string Id; public int Count; }
         readonly List<StageSpent> _spent = new List<StageSpent>();
         sealed class CardMark { public CardItem Item; public TextMeshProUGUI Label; }
@@ -29,9 +29,11 @@ namespace YxGuides
         int _offset, _page, _stagePage, _textPage, _round, _roundUsed, _stageUsed;
         bool _more, _visible, _miniOpen = true, _sawLobby, _roundKnown, _stageKnown, _sessionKnown, _counterAvailable;
         float _nextTick;
+        string L(string zh, string en) { return Context.Lang == "en" ? en : zh; }
 
         public override void OnLoad(ModContext ctx)
         {
+            _http = new GuideHttp(ctx);
             _ui = new UiKit(ctx);
             _panelUi = new UiKit(ctx);
             _selected = ctx.Data.Get<string>("selected", "");
@@ -39,12 +41,12 @@ namespace YxGuides
             if (cache != null) for (int i = 0; i < cache.Count; i++)
             {
                 try { string raw = cache[i] as string; if (raw != null) _subscriptions.Add(GuideBook.Read(raw)); }
-                catch (Exception) { ctx.Log.Warn("一份本地攻略缓存损坏，已跳过"); }
+                catch (Exception) { ctx.Log.Warn(ctx.T("一份本地攻略缓存损坏，已跳过", "A local guide cache was invalid and was skipped")); }
             }
             ctx.Input.RegisterHotkey("guides", "CTRL+ALT+G", Toggle);
             _counterAvailable = ctx.Hooks.TryPrefix("ReplaceArea", "set_replaceChance", 1, OnChance) != null;
             if (!_counterAvailable)
-                ctx.Log.Warn("换牌计数入口不可用，仅展示作者设置的预算");
+                ctx.Log.Warn(ctx.T("换牌计数入口不可用，仅展示作者设置的预算", "Swap counter unavailable; showing the author's budget only"));
             _sawLobby = SceneLoader.currentSceneName == "Lobby" || SceneLoader.currentSceneName == "Home";
         }
         bool OnChance(HookContext h)
@@ -102,32 +104,32 @@ namespace YxGuides
         void BuildTab()
         {
             _tab = _ui.Panel("GuideTab", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(8f, 210f), new Vector2(140f, 46f), new Color(.07f,.14f,.16f,.95f), true);
-            if (_tab != null) _ui.TextButton(_tab.transform,"open","攻略订阅",new Vector2(4f,-4f),new Vector2(132f,38f),Toggle);
+            if (_tab != null) _ui.TextButton(_tab.transform,"open",L("攻略订阅", "Guides"),new Vector2(4f,-4f),new Vector2(132f,38f),Toggle);
         }
         void Toggle() { _visible = !_visible; if (_visible) { Render(); if (_catalog.Count == 0 && !_http.Busy) Search(); } else ClosePanel(); }
         void ClosePanel() { _panelUi.DestroyAll(); _panel = null; }
         void Message(string message) { _message = message; if (_visible) Render(); }
         void Search()
         {
-            if (_http.Busy) { Message("请求正在进行，请稍等"); return; }
-            _view = "discover"; _message = "正在加载攻略…"; Render();
+            if (_http.Busy) { Message(L("请求正在进行，请稍等", "A request is already in progress")); return; }
+            _view = "discover"; _message = L("正在加载攻略…", "Loading guides…"); Render();
             _http.Get("?q=" + Uri.EscapeDataString(_search) + "&offset=" + GuideBook.Num(_offset), OnCatalog);
         }
         void OnCatalog(string raw, string error)
         {
             if (error != null) { Message(error); return; }
-            try { Dictionary<string, object> d = Json.ParseObject(raw); _catalog = Json.GetArray(d, "items") ?? new List<object>(); _more = Json.GetBool(d, "hasMore", false); _page = 0; Message("攻略已刷新"); }
-            catch (Exception) { Message("攻略列表格式不兼容，请更新 MOD"); }
+            try { Dictionary<string, object> d = Json.ParseObject(raw); _catalog = Json.GetArray(d, "items") ?? new List<object>(); _more = Json.GetBool(d, "hasMore", false); _page = 0; Message(L("攻略已刷新", "Guides refreshed")); }
+            catch (Exception) { Message(L("攻略列表格式不兼容，请更新 MOD", "Guide list is incompatible; update this MOD")); }
         }
         void LoadDetail(string id)
         {
-            if (_http.Busy) { Message("请求正在进行，请稍等"); return; }
+            if (_http.Busy) { Message(L("请求正在进行，请稍等", "A request is already in progress")); return; }
             _http.Get("/" + Uri.EscapeDataString(id), OnDetail);
         }
         void OnDetail(string raw, string error)
         {
             if (error != null) { Message(error); return; }
-            try { _detail = GuideBook.Read(raw); _view = "detail"; _stagePage = 0; _textPage = 0; Message("下载完成；点击订阅保存到本地"); }
+            try { _detail = GuideBook.Read(raw); _view = "detail"; _stagePage = 0; _textPage = 0; Message(L("下载完成；点击订阅保存到本地", "Downloaded. Subscribe to keep this guide locally")); }
             catch (Exception e) { Message(e.Message); }
         }
         GuideBook Find(string id) { for (int i = 0; i < _subscriptions.Count; i++) if (_subscriptions[i].Id == id) return _subscriptions[i]; return null; }
@@ -137,10 +139,10 @@ namespace YxGuides
             var next = new List<object>(); bool replaced = false;
             for (int i = 0; i < _subscriptions.Count; i++) { if (_subscriptions[i].Id == _detail.Id) { next.Add(_detail.Raw); replaced = true; } else next.Add(_subscriptions[i].Raw); }
             if (!replaced) next.Add(_detail.Raw);
-            if (next.Count > 24 || Encoding.UTF8.GetByteCount(Json.Serialize(next)) > 150 * 1024) { Message("本地订阅空间不足，请先取消部分订阅"); return; }
+            if (next.Count > 24 || Encoding.UTF8.GetByteCount(Json.Serialize(next)) > 150 * 1024) { Message(L("本地订阅空间不足，请先取消部分订阅", "Local subscription limit reached; remove a guide first")); return; }
             Context.Data.Set("subscriptions", next);
             _subscriptions.Clear(); for (int i = 0; i < next.Count; i++) _subscriptions.Add(GuideBook.Read((string)next[i]));
-            Message("已订阅，离线可用。本局仍使用开局锁定的版本。");
+            Message(L("已订阅，离线可用。本局仍使用开局锁定的版本。", "Subscribed and available offline. This match keeps its locked version."));
         }
         void Unsubscribe()
         {
@@ -150,24 +152,24 @@ namespace YxGuides
             for (int i = 0; i < _subscriptions.Count; i++) next.Add(_subscriptions[i].Raw);
             Context.Data.Set("subscriptions", next);
             if (_selected == _detail.Id) { _selected = ""; Context.Data.Set("selected", ""); }
-            Message("已取消订阅；正在进行的对局保留本局版本直到结束");
+            Message(L("已取消订阅；正在进行的对局保留本局版本直到结束", "Unsubscribed; an active match keeps its locked guide until it ends"));
         }
         void Use()
         {
-            if (_detail == null || Find(_detail.Id) == null) { Message("请先订阅这份攻略"); return; }
-            if (_session.Length > 0 && _active != null) { Message("本局已锁定攻略；返回大厅后可更换下一局攻略"); return; }
+            if (_detail == null || Find(_detail.Id) == null) { Message(L("请先订阅这份攻略", "Subscribe to this guide first")); return; }
+            if (_session.Length > 0 && _active != null) { Message(L("本局已锁定攻略；返回大厅后可更换下一局攻略", "This match has a locked guide; choose another after returning to the lobby")); return; }
             _selected = _detail.Id; Context.Data.Set("selected", _selected);
             if (_session.Length > 0) { _active = Find(_selected); _roundKnown = false; _stageKnown = false; _sessionKnown = false; _stage = ""; _roundUsed = 0; _stageUsed = 0; _spent.Clear(); SaveLock(); }
-            Message("已选择：" + _detail.Title + "。中途启用时不会猜测之前花掉的换牌次数。");
+            Message(L("已选择：", "Selected: ") + _detail.Title + L("。中途启用时不会猜测之前花掉的换牌次数。", ". Previous swaps are unknown if enabled mid-match."));
         }
         void Render()
         {
             if (!_visible) return; ClosePanel();
             _panel = _panelUi.Panel("GuideSubscriptions",new Vector2(.5f,.5f),new Vector2(.5f,.5f),Vector2.zero,new Vector2(1000f,720f),new Color(.055f,.095f,.11f,.99f),true);
             if (_panel == null) return;
-            Label("攻略订阅",24f,20f,550f,36f,26f);
-            Button("关闭",880f,18f,96f,Toggle);
-            Button("发现攻略",24f,70f,150f,Discover); Button("我的订阅",184f,70f,150f,Mine); Button("本局攻略",344f,70f,150f,Current);
+            Label(L("攻略订阅", "Guides"),24f,20f,550f,36f,26f);
+            Button(L("关闭", "Close"),880f,18f,96f,Toggle);
+            Button(L("发现攻略", "Discover"),24f,70f,150f,Discover); Button(L("我的订阅", "My guides"),184f,70f,150f,Mine); Button(L("本局攻略", "Current guide"),344f,70f,150f,Current);
             Label(_message,24f,651f,944f,52f,18f);
             if (_view == "detail" && _detail != null) { RenderDetail(); return; }
             if (_view == "current") { PagedText(Advice(),132f,480f); return; }
@@ -185,7 +187,7 @@ namespace YxGuides
                 Pager(_subscriptions.Count); return;
             }
             _searchInput = _ui.TextInput(_panel.transform,"search",new Vector2(24f,-130f),new Vector2(730f,42f),80,OnSearchText); _searchInput.SetText(_search);
-            Button("搜索",774f,130f,196f,SearchClicked);
+            Button(L("搜索", "Search"),774f,130f,196f,SearchClicked);
             if (_catalog.Count == 0) Label("暂无攻略。作者发布后会出现在这里。",24f,214f,920f,80f,22f);
             int from = _page * 5;
             for (int i = from; i < _catalog.Count && i < from + 5; i++)
@@ -206,9 +208,9 @@ namespace YxGuides
         void Current() { _view = "current"; _textPage = 0; Render(); }
         void Pager(int count)
         {
-            Button("上一页",24f,599f,125f,delegate { if (_page > 0) { _page--; Render(); } else if (_view == "discover" && _offset > 0) { _offset = Math.Max(0,_offset-20); Search(); } });
+            Button(L("上一页", "Previous"),24f,599f,125f,delegate { if (_page > 0) { _page--; Render(); } else if (_view == "discover" && _offset > 0) { _offset = Math.Max(0,_offset-20); Search(); } });
             Label("第 " + GuideBook.Num(_offset / 5 + _page + 1) + " 页",170f,608f,200f,30f,18f);
-            Button("下一页",840f,599f,130f,delegate { if ((_page+1)*5 < count) { _page++; Render(); } else if (_view == "discover" && _more) { _offset += 20; Search(); } });
+            Button(L("下一页", "Next"),840f,599f,130f,delegate { if ((_page+1)*5 < count) { _page++; Render(); } else if (_view == "discover" && _more) { _offset += 20; Search(); } });
         }
         void RenderDetail()
         {
@@ -217,7 +219,7 @@ namespace YxGuides
             Button(Find(_detail.Id)==null?"订阅到本地":"保存此版本",24f,215f,175f,Subscribe);
             Button("选择攻略",210f,215f,155f,Use); Button("检查更新",376f,215f,155f,RefreshDetail); Button("取消订阅",542f,215f,155f,Unsubscribe);
             Button("上一阶段",708f,215f,125f,PrevStage); Button("下一阶段",844f,215f,125f,NextStage);
-            Button("原生查看",24f,265f,125f,OpenNativeDetail);
+            Button(L("原生查看", "Native view"),24f,265f,125f,OpenNativeDetail);
             string text = _detail.Summary + (char)10 + (char)10 + GuideRules.Describe(_detail.Stages[_stagePage]);
             if (_detail.GameVersion != Context.Versions.Game) text = "注意：攻略版本与当前游戏版本不一致，仅供参考。" + (char)10 + text;
             PagedText(text,320f,260f);

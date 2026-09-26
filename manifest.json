@@ -1,7 +1,7 @@
 {
   "id": "com.yx.guides",
   "name": "流派攻略订阅",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "author": "yxp",
   "description": "在游戏内发现和订阅人工攻略，支持原生秘籍详情查看、卡组、角色、副职与仙命信息。Ctrl+Alt+G 打开。",
   "sdkVersion": ">=1.0.0 <2.0.0",
