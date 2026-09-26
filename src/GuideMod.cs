@@ -18,7 +18,7 @@ namespace YxGuides
         readonly List<StageSpent> _spent = new List<StageSpent>();
         sealed class CardMark { public CardItem Item; public TextMeshProUGUI Label; }
         readonly List<CardMark> _marks = new List<CardMark>();
-        UiKit _ui;
+        UiKit _ui, _panelUi;
         GameObject _panel, _tab, _mini;
         TextMeshProUGUI _miniText;
         UiInput _searchInput;
@@ -33,6 +33,7 @@ namespace YxGuides
         public override void OnLoad(ModContext ctx)
         {
             _ui = new UiKit(ctx);
+            _panelUi = new UiKit(ctx);
             _selected = ctx.Data.Get<string>("selected", "");
             List<object> cache = ctx.Data.Get<List<object>>("subscriptions", null);
             if (cache != null) for (int i = 0; i < cache.Count; i++)
@@ -100,11 +101,11 @@ namespace YxGuides
         }
         void BuildTab()
         {
-            _tab = _ui.Panel("GuideTab", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(8f, 210f), new Vector2(140f, 46f), new Color(.07f,.14f,.16f,.95f));
+            _tab = _ui.Panel("GuideTab", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(8f, 210f), new Vector2(140f, 46f), new Color(.07f,.14f,.16f,.95f), true);
             if (_tab != null) _ui.TextButton(_tab.transform,"open","攻略订阅",new Vector2(4f,-4f),new Vector2(132f,38f),Toggle);
         }
         void Toggle() { _visible = !_visible; if (_visible) { Render(); if (_catalog.Count == 0 && !_http.Busy) Search(); } else ClosePanel(); }
-        void ClosePanel() { if (_panel != null) _ui.Destroy(_panel); _panel = null; }
+        void ClosePanel() { _panelUi.DestroyAll(); _panel = null; }
         void Message(string message) { _message = message; if (_visible) Render(); }
         void Search()
         {
@@ -162,7 +163,7 @@ namespace YxGuides
         void Render()
         {
             if (!_visible) return; ClosePanel();
-            _panel = _ui.Panel("GuideSubscriptions",new Vector2(.5f,.5f),new Vector2(.5f,.5f),Vector2.zero,new Vector2(1000f,720f),new Color(.055f,.095f,.11f,.99f));
+            _panel = _panelUi.Panel("GuideSubscriptions",new Vector2(.5f,.5f),new Vector2(.5f,.5f),Vector2.zero,new Vector2(1000f,720f),new Color(.055f,.095f,.11f,.99f),true);
             if (_panel == null) return;
             Label("攻略订阅",24f,20f,550f,36f,26f);
             Button("关闭",880f,18f,96f,Toggle);
@@ -256,7 +257,7 @@ namespace YxGuides
         {
             bool show = _active != null && _snapshot != null && !_visible;
             if(!show){if(_mini!=null)_mini.SetActive(false);return;}
-            if(_mini==null){_mini=_ui.Panel("GuideHint",new Vector2(1f,1f),new Vector2(1f,1f),new Vector2(-12f,-95f),new Vector2(390f,240f),new Color(.055f,.095f,.11f,.94f));if(_mini==null)return;
+            if(_mini==null){_mini=_ui.Panel("GuideHint",new Vector2(1f,1f),new Vector2(1f,1f),new Vector2(-12f,-95f),new Vector2(390f,240f),new Color(.055f,.095f,.11f,.94f),true);if(_mini==null)return;
                 _ui.TextButton(_mini.transform,"full","本局攻略 / 详情",new Vector2(8f,-8f),new Vector2(272f,34f),OpenCurrent);
                 _ui.TextButton(_mini.transform,"collapse","收起/展开",new Vector2(284f,-8f),new Vector2(98f,34f),Collapse);
                 _miniText=_ui.Label(_mini.transform,"hint","",new Vector2(12f,-50f),new Vector2(365f,180f),18f);_miniText.richText=false;}
@@ -296,6 +297,6 @@ namespace YxGuides
         void OpenCurrent(){_visible=true;Current();}
         void Label(string text,float x,float y,float width,float height,float size){TextMeshProUGUI label=_ui.Label(_panel.transform,"label",text,new Vector2(x,-y),new Vector2(width,height),size);label.richText=false;}
         void Button(string text,float x,float y,float width,Action action){UiButton button=_ui.TextButton(_panel.transform,"button",text,new Vector2(x,-y),new Vector2(width,42f),action);TextMeshProUGUI label=button.GameObject.GetComponentInChildren<TextMeshProUGUI>();if(label!=null)label.richText=false;}
-        public override void OnDisable(){_http.Cancel();for(int i=0;i<_marks.Count;i++)if(_marks[i].Label!=null)UnityEngine.Object.Destroy(_marks[i].Label.transform.parent.gameObject);_marks.Clear();if(_ui!=null)_ui.DestroyAll();}
+        public override void OnDisable(){_http.Cancel();for(int i=0;i<_marks.Count;i++)if(_marks[i].Label!=null)UnityEngine.Object.Destroy(_marks[i].Label.transform.parent.gameObject);_marks.Clear();if(_ui!=null)_ui.DestroyAll();if(_panelUi!=null)_panelUi.DestroyAll();}
     }
 }

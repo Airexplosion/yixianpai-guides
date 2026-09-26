@@ -11,6 +11,7 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <YxRefs Condition="'$(YxRefs)' == ''">$(MSBuildThisFileDirectory)refs\</YxRefs>
     <YxSdkDir Condition="'$(YxSdkDir)' == ''">$(MSBuildThisFileDirectory)sdk-bin\</YxSdkDir>
+    <YxSdkDir Condition="!Exists('$(YxSdkDir)Yx.ModSdk.Core.dll') And Exists('$(YxSdkDir)net40\Yx.ModSdk.Core.dll')">$(YxSdkDir)net40\</YxSdkDir>
     <WebRequestRef>$(YxRefs)UnityEngine.UnityWebRequestModule.dll</WebRequestRef>
     <WebRequestRef Condition="!Exists('$(WebRequestRef)')">$(YxRefs)dummy\UnityEngine.UnityWebRequestModule.dll</WebRequestRef>
   </PropertyGroup>
@@ -43,4 +44,3 @@
     <Reference Include="ILRuntime.Mono.Cecil"><HintPath>$(YxRefs)ILRuntime.Mono.Cecil.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 </Project>
-
