@@ -32,7 +32,7 @@ namespace YxGuides
         static void Add(GuideSnapshot s, CardItem item)
         {
             if (item == null || item.cardInfo == null || item.cardConfig == null) return;
-            var card = new HeldCard(); card.Name = item.cardConfig.name; card.Level = item.cardConfig.rarity; card.View = item;
+            var card = new HeldCard(); card.Name = item.cardConfig.name; card.Level = item.cardConfig.rarity + 1; card.View = item;
             s.Cards.Add(card);
         }
     }

@@ -217,11 +217,18 @@ namespace YxGuides
             Button(Find(_detail.Id)==null?"订阅到本地":"保存此版本",24f,215f,175f,Subscribe);
             Button("选择攻略",210f,215f,155f,Use); Button("检查更新",376f,215f,155f,RefreshDetail); Button("取消订阅",542f,215f,155f,Unsubscribe);
             Button("上一阶段",708f,215f,125f,PrevStage); Button("下一阶段",844f,215f,125f,NextStage);
+            Button("原生查看",24f,265f,125f,OpenNativeDetail);
             string text = _detail.Summary + (char)10 + (char)10 + GuideRules.Describe(_detail.Stages[_stagePage]);
             if (_detail.GameVersion != Context.Versions.Game) text = "注意：攻略版本与当前游戏版本不一致，仅供参考。" + (char)10 + text;
-            PagedText(text,270f,310f);
+            PagedText(text,320f,260f);
         }
         void RefreshDetail() { if (_detail != null) LoadDetail(_detail.Id); }
+        void OpenNativeDetail()
+        {
+            if (_detail == null) return;
+            if (NativeGuideView.Show(_detail, Context)) { _visible = false; ClosePanel(); }
+            else Message("请在游戏大厅打开原生详情；当前页面无法接入游戏面板。");
+        }
         void PrevStage() { _stagePage = Math.Max(0,_stagePage-1); _textPage=0;Render(); }
         void NextStage() { _stagePage = Math.Min(_detail.Stages.Count-1,_stagePage+1); _textPage=0;Render(); }
         void PagedText(string text, float y, float height)

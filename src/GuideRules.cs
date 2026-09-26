@@ -26,6 +26,8 @@ namespace YxGuides
     {
         public string Id, Title, Author, Summary, Hero, Career, GameVersion, Raw;
         public int Version;
+        public readonly int[] Talents = new int[4];
+        public int TalentCount;
         public readonly List<StageRule> Stages = new List<StageRule>();
 
         public static GuideBook Read(string raw)
@@ -39,6 +41,17 @@ namespace YxGuides
             if (book.Id.Length != 36 || book.Version < 1) throw new FormatException("攻略标识不正确");
             book.Author = Text(root, "author"); book.Title = Text(g, "title"); book.Summary = Text(g, "summary");
             book.Hero = Text(g, "hero"); book.Career = Text(g, "career"); book.GameVersion = Text(g, "gameVersion"); book.Raw = raw;
+            List<object> talents = Json.GetArray(g, "talents");
+            if (talents != null)
+            {
+                if (talents.Count > 4) throw new FormatException("仙命数量不正确");
+                for (int i = 0; i < talents.Count; i++)
+                {
+                    int id = Convert.ToInt32(talents[i], CultureInfo.InvariantCulture);
+                    if (id < 0) throw new FormatException("仙命标识不正确");
+                    book.Talents[book.TalentCount++] = id;
+                }
+            }
             List<object> stages = Json.GetArray(g, "stages");
             if (stages == null || stages.Count < 1 || stages.Count > 24) throw new FormatException("阶段数量不正确");
             for (int i = 0; i < stages.Count; i++)
