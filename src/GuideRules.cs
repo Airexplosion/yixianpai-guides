@@ -186,19 +186,21 @@ namespace YxGuides
             if (s.PerStage >= 0) budget = Math.Min(budget, Math.Max(0, s.PerStage - stageUsed));
             return budget;
         }
-        public static string Describe(StageRule s)
+        public static string Describe(StageRule s, bool english)
         {
-            var b = new StringBuilder(); b.Append(s.Name).Append(" · 境界 ").Append(GuideBook.Num(s.RealmMin)).Append("—").Append(GuideBook.Num(s.RealmMax));
-            b.Append((char)10).Append("轮次 ").Append(GuideBook.Num(s.RoundMin)).Append("—").Append(GuideBook.Num(s.RoundMax)).Append(" · 优先级 ").Append(GuideBook.Num(s.Priority));
-            for (int i = 0; i < s.Target.Count; i++) { b.Append((char)10).Append("第 ").Append(GuideBook.Num(i + 1)).Append(" 格：");
-                if (s.Target[i].Options.Count == 0) b.Append("留空");
-                for (int j = 0; j < s.Target[i].Options.Count; j++) { if (j > 0) b.Append(" / "); CardRule c = s.Target[i].Options[j]; b.Append(c.Name).Append(" ≥").Append(GuideBook.Num(c.Level)).Append("级"); } }
-            for (int i = 0; i < s.Keep.Count; i++) { CardRule c = s.Keep[i]; b.Append((char)10).Append("保留 ").Append(c.Name).Append(" ≥").Append(GuideBook.Num(c.Level)).Append("级 ×").Append(GuideBook.Num(c.Count)).Append("：").Append(c.Reason); }
-            b.Append((char)10).Append("换牌：每轮 ").Append(Limit(s.PerRound)).Append(" / 阶段 ").Append(Limit(s.PerStage)).Append(" / 保底 ").Append(GuideBook.Num(s.Reserve));
-            if (s.Stop) b.Append((char)10).Append("目标凑齐后停止换牌");
-            if (s.Requires.Count > 0) { b.Append((char)10).Append("进入条件："); for (int i = 0; i < s.Requires.Count; i++) { CardRule c = s.Requires[i]; b.Append(c.Name).Append(" ≥").Append(GuideBook.Num(c.Level)).Append("级 ×").Append(GuideBook.Num(c.Count)).Append("；"); } }
+            var b = new StringBuilder(); b.Append(s.Name).Append(english ? " · Realm " : " · 境界 ").Append(GuideBook.Num(s.RealmMin)).Append("—").Append(GuideBook.Num(s.RealmMax));
+            b.Append((char)10).Append(english ? "Rounds " : "轮次 ").Append(GuideBook.Num(s.RoundMin)).Append("—").Append(GuideBook.Num(s.RoundMax)).Append(english ? " · Priority " : " · 优先级 ").Append(GuideBook.Num(s.Priority));
+            for (int i = 0; i < s.Target.Count; i++) { b.Append((char)10).Append(english ? "Slot " : "第 ").Append(GuideBook.Num(i + 1)).Append(english ? ": " : " 格：");
+                if (s.Target[i].Options.Count == 0) b.Append(english ? "Empty" : "留空");
+                for (int j = 0; j < s.Target[i].Options.Count; j++) { if (j > 0) b.Append(" / "); CardRule c = s.Target[i].Options[j]; b.Append(c.Name).Append(" ≥").Append(GuideBook.Num(c.Level)).Append(english ? " copies" : "级"); } }
+            for (int i = 0; i < s.Keep.Count; i++) { CardRule c = s.Keep[i]; b.Append((char)10).Append(english ? "Keep " : "保留 ").Append(c.Name).Append(" ≥").Append(GuideBook.Num(c.Level)).Append(english ? " copies ×" : "级 ×").Append(GuideBook.Num(c.Count)).Append(": ").Append(c.Reason); }
+            b.Append((char)10).Append(english ? "Swaps: round " : "换牌：每轮 ").Append(Limit(s.PerRound, english)).Append(" / ").Append(english ? "stage " : "阶段 ").Append(Limit(s.PerStage, english)).Append(" / ").Append(english ? "reserve " : "保底 ").Append(GuideBook.Num(s.Reserve));
+            if (s.Stop) b.Append((char)10).Append(english ? "Stop when target deck is ready" : "目标凑齐后停止换牌");
+            if (s.IfHand != null) b.Append((char)10).Append(english ? "If hand has " : "如果手牌有 ").Append(s.IfHand.Name).Append(" ≥").Append(GuideBook.Num(s.IfHand.Level)).Append(english ? " copies ×" : "级 ×").Append(GuideBook.Num(s.IfHand.Count));
+            if (!string.IsNullOrEmpty(s.ElseOf)) b.Append((char)10).Append(english ? "Else branch of " : "否则分支：").Append(s.ElseOf);
+            if (s.Requires.Count > 0) { b.Append((char)10).Append(english ? "Required cards: " : "进入条件："); for (int i = 0; i < s.Requires.Count; i++) { CardRule c = s.Requires[i]; b.Append(c.Name).Append(" ≥").Append(GuideBook.Num(c.Level)).Append(english ? " copies ×" : "级 ×").Append(GuideBook.Num(c.Count)).Append("; "); } }
             b.Append((char)10).Append(s.Note); return b.ToString();
         }
-        static string Limit(int n) { return n < 0 ? "不限" : GuideBook.Num(n); }
+        static string Limit(int n, bool english) { return n < 0 ? (english ? "any" : "不限") : GuideBook.Num(n); }
     }
 }

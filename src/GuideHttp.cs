@@ -10,7 +10,7 @@ namespace YxGuides
     {
         readonly ModContext _context;
         public GuideHttp(ModContext context) { _context = context; }
-        string Loc(string zh, string en) { return _context.Lang == "en" ? en : zh; }
+        string Loc(string zh, string en) { return GuideLocale.T(zh, en); }
         UnityWebRequest _request;
         Action<string, string> _done;
         float _started;
