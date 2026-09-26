@@ -1,0 +1,8 @@
+bin/
+obj/
+plugins/
+dist/
+refs/
+sdk-bin/
+*.dll
+*.pdb

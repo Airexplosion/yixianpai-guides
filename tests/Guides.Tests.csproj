@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><RollForward>Major</RollForward><LangVersion>7.3</LangVersion><IsPackable>false</IsPackable></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../src/GuideRules.cs" Link="GuideRules.cs" />
+    <Compile Condition="!Exists('../../../sdk/Yx.ModSdk.Core/Yx.ModSdk.Core.csproj')" Include="../support/Json.cs" Link="Json.cs" />
+    <Compile Condition="!Exists('../../../sdk/Yx.ModSdk.Core/Yx.ModSdk.Core.csproj')" Include="../support/JsonParser.cs" Link="JsonParser.cs" />
+    <ProjectReference Condition="Exists('../../../sdk/Yx.ModSdk.Core/Yx.ModSdk.Core.csproj')" Include="../../../sdk/Yx.ModSdk.Core/Yx.ModSdk.Core.csproj" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+</Project>

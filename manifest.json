@@ -1,0 +1,11 @@
+{
+  "id": "com.yx.guides",
+  "name": "流派攻略订阅",
+  "version": "0.1.0",
+  "author": "yxp",
+  "description": "在游戏内发现和订阅人工攻略，按境界、轮次和持牌条件展示阵容、留牌与换牌预算。支持离线缓存和本局版本锁定。作者通过群认证登录网页编辑发布。Ctrl+Alt+G 打开。",
+  "sdkVersion": ">=1.0.0 <2.0.0",
+  "entry": "plugins/Guides.dll",
+  "entryType": "YxGuides.GuideMod",
+  "provides": { "hooks": ["ReplaceArea.set_replaceChance"], "hotkeys": ["CTRL+ALT+G"] }
+}

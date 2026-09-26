@@ -1,0 +1,42 @@
+using System;
+using UnityEngine;
+using UnityEngine.Networking;
+
+namespace YxGuides
+{
+    // 所有 Unity 调用和回调都由 MOD 的主线程 OnUpdate 驱动。
+    internal sealed class GuideHttp
+    {
+        UnityWebRequest _request;
+        Action<string, string> _done;
+        float _started;
+        public bool Busy { get { return _request != null; } }
+        public void Get(string path, Action<string, string> done)
+        {
+            if (Busy) { done(null, "请求正在进行，请稍等"); return; }
+            try
+            {
+                _request = UnityWebRequest.Get("https://auth.kaigua.vip/v1/guides" + path);
+                _request.timeout = 15; _request.redirectLimit = 0; _done = done; _started = Time.realtimeSinceStartup;
+                _request.SendWebRequest();
+            }
+            catch (Exception) { Cancel(); done(null, "无法启动攻略下载，请检查网络"); }
+        }
+        public void Tick()
+        {
+            if (_request == null) return;
+            if (_request.downloadedBytes > 196608 || Time.realtimeSinceStartup - _started > 18f) { Finish(null, "请求超时或内容过大，已保留本地订阅"); return; }
+            if (!_request.isDone) return;
+            if (_request.isNetworkError || _request.isHttpError) { Finish(null, "攻略服务暂不可用，已保留本地订阅"); return; }
+            string text = _request.downloadHandler.text;
+            Finish(text, null);
+        }
+        void Finish(string text, string error) { Action<string, string> callback = _done; Cancel(); if (callback != null) callback(text, error); }
+        public void Cancel()
+        {
+            _done = null;
+            if (_request == null) return;
+            _request.Abort(); _request.Dispose(); _request = null;
+        }
+    }
+}
