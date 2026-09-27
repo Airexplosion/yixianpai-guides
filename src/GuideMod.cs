@@ -147,7 +147,7 @@ namespace YxGuides
             try
             {
                 _detail = GuideBook.Read(raw);
-                Subscribe();
+                if (!SaveSubscription()) return;
                 _view = "detail";
                 _stagePage = 0;
                 _textPage = 0;
@@ -156,16 +156,17 @@ namespace YxGuides
             catch (Exception e) { Message(GuideLocale.Error(e.Message)); }
         }
         GuideBook Find(string id) { for (int i = 0; i < _subscriptions.Count; i++) if (_subscriptions[i].Id == id) return _subscriptions[i]; return null; }
-        void Subscribe()
+        void Subscribe() { SaveSubscription(); }
+        bool SaveSubscription()
         {
-            if (_detail == null) return;
-            var next = new List<object>(); bool replaced = false;
-            for (int i = 0; i < _subscriptions.Count; i++) { if (_subscriptions[i].Id == _detail.Id) { next.Add(_detail.Raw); replaced = true; } else next.Add(_subscriptions[i].Raw); }
-            if (!replaced) next.Add(_detail.Raw);
-            if (next.Count > 24 || Encoding.UTF8.GetByteCount(Json.Serialize(next)) > 150 * 1024) { Message(L("本地订阅空间不足，请先取消部分订阅", "Local subscription limit reached; remove a guide first")); return; }
+            if (_detail == null) return false;
+            List<object> next;
+            if (!GuideSubscriptions.TryPrepare(_subscriptions, _detail, out next))
+            { Message(L("本地订阅空间不足，请先取消部分订阅", "Local subscription limit reached; remove a guide first")); return false; }
             Context.Data.Set("subscriptions", next);
             _subscriptions.Clear(); for (int i = 0; i < next.Count; i++) _subscriptions.Add(GuideBook.Read((string)next[i]));
             Message(L("已订阅，离线可用。本局仍使用开局锁定的版本。", "Subscribed and available offline. This match keeps its locked version."));
+            return true;
         }
         void Unsubscribe()
         {

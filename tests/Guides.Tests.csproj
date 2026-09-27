@@ -2,6 +2,8 @@
   <PropertyGroup><TargetFramework>net8.0</TargetFramework><RollForward>Major</RollForward><LangVersion>7.3</LangVersion><IsPackable>false</IsPackable></PropertyGroup>
   <ItemGroup>
     <Compile Include="../src/GuideRules.cs" Link="GuideRules.cs" />
+    <Compile Include="../src/GuideShareCode.cs" Link="GuideShareCode.cs" />
+    <Compile Include="../src/GuideSubscriptions.cs" Link="GuideSubscriptions.cs" />
     <Compile Condition="!Exists('../../../sdk/Yx.ModSdk.Core/Yx.ModSdk.Core.csproj')" Include="../support/Json.cs" Link="Json.cs" />
     <Compile Condition="!Exists('../../../sdk/Yx.ModSdk.Core/Yx.ModSdk.Core.csproj')" Include="../support/JsonParser.cs" Link="JsonParser.cs" />
     <ProjectReference Condition="Exists('../../../sdk/Yx.ModSdk.Core/Yx.ModSdk.Core.csproj')" Include="../../../sdk/Yx.ModSdk.Core/Yx.ModSdk.Core.csproj" />

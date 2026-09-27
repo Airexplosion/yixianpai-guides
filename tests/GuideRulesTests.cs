@@ -49,6 +49,34 @@ public class GuideRulesTests
         Assert.False(GuideRules.Match(Rule("崩拳·寸劲",2),Card("崩拳•寸劲",1)));
         Assert.False(GuideRules.Match(Rule("崩拳"),Card("崩拳·寸劲")));
     }
+    [Fact] public void IfElseCountsOnlyHandAndBranchesAreExclusive()
+    {
+        var book = new GuideBook { Hero = "全部", Career = "全部" };
+        var yes = Stage(); yes.IfHand = Rule("锻拳", 2, 2);
+        var no = Stage(); no.Id = "else"; no.Name = "没成型"; no.ElseOf = yes.Id;
+        book.Stages.Add(yes); book.Stages.Add(no);
+        var state = new GuideSnapshot { Realm = 1, Round = 1 }; string error;
+        state.Cards.Add(new HeldCard { Name = "锻拳", Level = 2, InHand = true });
+        state.Cards.Add(new HeldCard { Name = "锻拳", Level = 3, InHand = false });
+        Assert.Same(no, GuideRules.Select(book, state, out error));
+        state.Cards[1].InHand = true;
+        Assert.Same(yes, GuideRules.Select(book, state, out error));
+    }
+    [Fact] public void ParserRejectsBrokenElseReference()
+    {
+        const string raw = "{\"id\":\"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa\",\"version\":1,\"guide\":{\"schemaVersion\":1,\"stages\":[{\"id\":\"a\",\"elseOf\":\"missing\"}]}}";
+        Assert.Throws<System.FormatException>(() => GuideBook.Read(raw));
+    }
+    [Theory]
+    [InlineData("YXG:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa@3", true, 3)]
+    [InlineData("YXG:bad@3", false, 0)]
+    [InlineData("YXG:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa@0", false, 0)]
+    [InlineData("https://auth.kaigua.vip/v1/guides/a", false, 0)]
+    public void SubscriptionCodeIsStrict(string raw, bool expected, int version)
+    {
+        string id; int actual; Assert.Equal(expected, GuideShareCode.TryParse(raw, out id, out actual));
+        if (expected) { Assert.Equal("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa", id); Assert.Equal(version, actual); }
+    }
     [Theory]
     [InlineData(10,0,0,false,2)] [InlineData(10,1,0,false,1)] [InlineData(7,0,0,false,1)]
     [InlineData(6,0,0,false,0)] [InlineData(20,0,4,false,0)] [InlineData(20,2,2,false,0)]
